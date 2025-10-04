@@ -1,0 +1,4 @@
+55555|jorge|gonzales|99999|lima
+66666|maria|sanchez|99999|miraflores
+88888|ana|lopez|99999|san isidro
+77777|juan|perez|99999|san miguel

@@ -124,6 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="HIRAOKA.cpp" />
+    <ClCompile Include="SistemaGestionHiraoka.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\DOCUMENTACION_TECNICA.md" />
@@ -141,6 +142,7 @@
     <ClInclude Include="Cliente.h" />
     <ClInclude Include="Cola.h" />
     <ClInclude Include="Electrodomestico.h" />
+    <ClInclude Include="ItemCarrito.h" />
     <ClInclude Include="Lista.h" />
     <ClInclude Include="Nodo.h" />
     <ClInclude Include="Pila.h" />
