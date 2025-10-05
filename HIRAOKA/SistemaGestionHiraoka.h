@@ -14,6 +14,7 @@
 #include <functional>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include <ctime>
 
 using namespace std;
@@ -89,6 +90,7 @@ private:
 	void modificarCarrito();
 	void finalizarCompra();
 	void miCuenta();
+	void verMisCompras();  // Nueva función para ver historial
 	void registrarMiCuenta();
 	void registrarseAhora();
 	void iniciarSesionCliente();

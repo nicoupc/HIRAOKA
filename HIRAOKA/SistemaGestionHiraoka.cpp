@@ -162,6 +162,7 @@ void SistemaGestionHiraoka::mostrarMenuCliente() {
 		cout << "  6. Registrarme                       " << endl;
 	} else {
 		cout << "  5. Mi Cuenta                         " << endl;
+		cout << "  6. Mis Compras                       " << endl;
 	}
 	
 	cout << "  0. Salir                             " << endl;
@@ -1136,7 +1137,10 @@ void SistemaGestionHiraoka::finalizarCompra() {
 		Electrodomestico* producto = item->getProducto();
 
 		contadorVentas++;
-		string idVenta = "V" + to_string(contadorVentas);
+		// Formatear el ID con ceros a la izquierda (V001, V002, etc.)
+		ostringstream oss;
+		oss << "V" << setfill('0') << setw(3) << contadorVentas;
+		string idVenta = oss.str();
 
 		// Crear venta
 		Venta* nuevaVenta = new Venta(
@@ -1213,6 +1217,62 @@ void SistemaGestionHiraoka::miCuenta() {
 	cout << "  Direccion: " << cliente->getDireccion() << endl;
 	cout << "========================================" << endl;
 
+	pausa();
+}
+
+void SistemaGestionHiraoka::verMisCompras() {
+	limpiarPantalla();
+	cout << "\n========================================" << endl;
+	cout << "        MIS COMPRAS - HISTORIAL         " << endl;
+	cout << "========================================\n" << endl;
+
+	if (dniClienteActual.empty()) {
+		cout << "No tienes una sesion iniciada." << endl;
+		cout << "\nPor favor, inicia sesion para ver tu historial." << endl;
+		pausa();
+		return;
+	}
+
+	// Buscar todas las compras del cliente
+	bool tieneCompras = false;
+	double totalGastado = 0;
+	int cantidadCompras = 0;
+
+	cout << "Buscando compras de DNI: " << dniClienteActual << "\n" << endl;
+	cout << "========================================" << endl;
+
+	for (int i = 0; i < colaDeVentas.getTamanio(); i++) {
+		Venta* venta = colaDeVentas.obtenerEnPosicion(i);
+		
+		if (venta->getDniCliente() == dniClienteActual) {
+			tieneCompras = true;
+			cantidadCompras++;
+			
+			cout << "\n--- Compra #" << cantidadCompras << " ---" << endl;
+			cout << "  ID Venta: " << venta->getIdVenta() << endl;
+			cout << "  Fecha: " << venta->getFecha() << endl;
+			cout << "  Producto: " << venta->getNombreProducto() << endl;
+			cout << "  Codigo: " << venta->getCodigoProducto() << endl;
+			cout << "  Cantidad: " << venta->getCantidad() << endl;
+			cout << "  Precio Unit: S/. " << fixed << setprecision(2) << venta->getPrecioUnitario() << endl;
+			cout << "  Total: S/. " << fixed << setprecision(2) << venta->getMontoTotal() << endl;
+			
+			totalGastado += venta->getMontoTotal();
+		}
+	}
+
+	cout << "\n========================================" << endl;
+
+	if (!tieneCompras) {
+		cout << "\nAun no has realizado ninguna compra." << endl;
+		cout << "Ve al catalogo y empieza a comprar!" << endl;
+	} else {
+		cout << "\nRESUMEN:" << endl;
+		cout << "  Total de compras: " << cantidadCompras << endl;
+		cout << "  Total gastado: S/. " << fixed << setprecision(2) << totalGastado << endl;
+	}
+
+	cout << "========================================" << endl;
 	pausa();
 }
 
@@ -1426,6 +1486,15 @@ void SistemaGestionHiraoka::cargarVentas() {
 			Venta* venta = new Venta(idVenta, fecha, dniCliente, nombreCliente, 
 									 codigoProducto, nombreProducto, cantidad, precio);
 			colaDeVentas.encolar(venta);
+			
+			// Actualizar el contador de ventas al número más alto
+			// Extraer el número del código de venta (ejemplo: V007 -> 7)
+			if (idVenta.length() > 1 && idVenta[0] == 'V') {
+				int numeroVenta = stoi(idVenta.substr(1));
+				if (numeroVenta > contadorVentas) {
+					contadorVentas = numeroVenta;
+				}
+			}
 		}
 		archivo.close();
 	}
@@ -1525,6 +1594,8 @@ void SistemaGestionHiraoka::iniciar() {
 				case 6:
 					if (dniClienteActual.empty()) {
 						registrarseAhora(); // Registro
+					} else {
+						verMisCompras(); // Ver historial de compras
 					}
 					break;
 				case 0:
@@ -1657,7 +1728,6 @@ void SistemaGestionHiraoka::verEstadisticasProductos() {
 	
 	// Lambda 1: Contar elementos
 	cout << "Total de productos: " << inventario.contarElementos() << endl;
-	cout << "  [Lambda usada: auto contar = [](int a, int b) { return a + b; }]" << endl;
 	
 	// Lambda 2: Sumar stocks usando sumarElementos()
 	Lista<int> listaStocks;
@@ -1666,8 +1736,7 @@ void SistemaGestionHiraoka::verEstadisticasProductos() {
 		listaStocks.agregarFinal(prod->getStock());
 	}
 	int stockTotal = listaStocks.sumarElementos();
-	cout << "\nUnidades en stock: " << stockTotal << endl;
-	cout << "  [Lambda usada: auto sumar = [](int a, int b) { return a + b; }]" << endl;
+	cout << "Unidades en stock: " << stockTotal << endl;
 	
 	// Lambda 3: Mostrar precios usando mostrarTodos()
 	Lista<double> listaPrecios;
@@ -1676,12 +1745,11 @@ void SistemaGestionHiraoka::verEstadisticasProductos() {
 		listaPrecios.agregarFinal(prod->getPrecio());
 	}
 	double precioTotal = listaPrecios.sumarElementos();
-	cout << "\nPrecio promedio: S/. " << fixed << setprecision(2) 
+	cout << "Precio promedio: S/. " << fixed << setprecision(2) 
 		 << (precioTotal / inventario.contarElementos()) << endl;
 	
-	cout << "\nTodos los precios: ";
+	cout << "\nTodos los precios: S/. ";
 	listaPrecios.mostrarTodos();
-	cout << "  [Lambda usada: auto mostrar = [](double dato) { cout << dato << \" \"; }]" << endl;
 	
 	cout << "\n========================================" << endl;
 	pausa();
@@ -1700,7 +1768,6 @@ void SistemaGestionHiraoka::verEstadisticasClientes() {
 	
 	// Lambda 1: Contar elementos
 	cout << "Total de clientes: " << registroClientes.contarElementos() << endl;
-	cout << "  [Lambda usada: auto contar = [](int a, int b) { return a + b; }]" << endl;
 	
 	// Lambda 2: Mostrar DNIs usando mostrarTodos()
 	Lista<string> listaDNIs;
@@ -1710,18 +1777,7 @@ void SistemaGestionHiraoka::verEstadisticasClientes() {
 	}
 	cout << "\nDNIs de clientes: ";
 	listaDNIs.mostrarTodos();
-	cout << "  [Lambda usada: auto mostrar = [](string dato) { cout << dato << \" \"; }]" << endl;
-	
-	// Lambda 3: Contar clientes en Lima
-	int clientesLima = 0;
-	for (int i = 0; i < registroClientes.getTamanio(); i++) {
-		Cliente* cli = registroClientes.obtenerEnPosicion(i);
-		if (cli->getDireccion().find("Lima") != string::npos) {
-			clientesLima++;
-		}
-	}
-	cout << "\nClientes en Lima: " << clientesLima << endl;
-	
+		
 	// Cliente mas reciente (tope de pila)
 	if (!registroClientes.estaVacia()) {
 		Cliente* ultimo = registroClientes.obtenerEnPosicion(0);
@@ -1745,7 +1801,6 @@ void SistemaGestionHiraoka::verEstadisticasVentas() {
 	
 	// Lambda 1: Contar elementos
 	cout << "Total de ventas: " << colaDeVentas.contarElementos() << endl;
-	cout << "  [Lambda usada: auto contar = [](int a, int b) { return a + b; }]" << endl;
 	
 	// Lambda 2: Sumar montos usando sumarElementos()
 	Lista<double> listaMontos;
@@ -1754,15 +1809,13 @@ void SistemaGestionHiraoka::verEstadisticasVentas() {
 		listaMontos.agregarFinal(venta->getMontoTotal());
 	}
 	double montoTotal = listaMontos.sumarElementos();
-	cout << "\nMonto total: S/. " << fixed << setprecision(2) << montoTotal << endl;
-	cout << "  [Lambda usada: auto sumar = [](double a, double b) { return a + b; }]" << endl;
+	cout << "Monto total: S/. " << fixed << setprecision(2) << montoTotal << endl;
 	
-	cout << "\nVenta promedio: S/. " << (montoTotal / colaDeVentas.contarElementos()) << endl;
+	cout << "Venta promedio: S/. " << (montoTotal / colaDeVentas.contarElementos()) << endl;
 	
 	// Lambda 3: Mostrar todos los montos
 	cout << "\nTodos los montos: S/. ";
 	listaMontos.mostrarTodos();
-	cout << "  [Lambda usada: auto mostrar = [](double dato) { cout << dato << \" \"; }]" << endl;
 	
 	cout << "\n========================================" << endl;
 	pausa();

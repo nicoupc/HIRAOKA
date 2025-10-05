@@ -127,6 +127,7 @@
     <ClCompile Include="SistemaGestionHiraoka.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\CAMBIOS_REALIZADOS_LAMBDAS.md" />
     <None Include="requerimientos.md">
       <SubType>
       </SubType>

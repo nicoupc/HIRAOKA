@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="requerimientos.md" />
+    <None Include="..\CAMBIOS_REALIZADOS_LAMBDAS.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SistemaGestionHiraoka.h">
