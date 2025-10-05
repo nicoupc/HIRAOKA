@@ -1,6 +1,7 @@
 #pragma once
 #include "Nodo.h"
 #include <functional>
+#include <iostream>
 
 using namespace std;
 
@@ -136,73 +137,95 @@ public:
 		return actual->dato;
 	}
 
-	// Metodo para recorrer con lambda (REQUERIMIENTO: Lambda 1)
-	void recorrer(function<void(T)> accion) {
+	// ============================================================
+	// METODOS CON LAMBDAS (3 requeridos)
+	// ============================================================
+	
+	// Lambda 1: Mostrar todos los elementos
+	void mostrarTodos() {
+		auto mostrar = [](T dato) { cout << dato << " "; };
+		
 		Nodo<T>* actual = inicio;
 		while (actual != nullptr) {
-			accion(actual->dato);
+			mostrar(actual->dato);
 			actual = actual->siguiente;
 		}
+		cout << endl;
 	}
 
-	// Metodo para filtrar con lambda (REQUERIMIENTO: Lambda 2)
-	Lista<T>* filtrar(function<bool(T)> condicion) {
-		Lista<T>* listaFiltrada = new Lista<T>();
+	// Lambda 2: Contar elementos
+	int contarElementos() {
+		auto contar = [](int a, int b) { return a + b; };
+		
+		int total = 0;
 		Nodo<T>* actual = inicio;
 		while (actual != nullptr) {
-			if (condicion(actual->dato)) {
-				listaFiltrada->agregarFinal(actual->dato);
-			}
+			total = contar(total, 1);
 			actual = actual->siguiente;
 		}
-		return listaFiltrada;
+		return total;
 	}
 
-	// Metodo de busqueda recursiva (REQUERIMIENTO: Recursividad)
-	T buscarRecursivo(Nodo<T>* nodo, function<bool(T)> condicion) {
-		if (nodo == nullptr) {
-			return T(); // Retorna valor por defecto si no encuentra
+	// Lambda 3: Sumar elementos
+	T sumarElementos() {
+		auto sumar = [](T a, T b) { return a + b; };
+		
+		T suma = T();
+		Nodo<T>* actual = inicio;
+		while (actual != nullptr) {
+			suma = sumar(suma, actual->dato);
+			actual = actual->siguiente;
 		}
-		if (condicion(nodo->dato)) {
-			return nodo->dato;
-		}
-		return buscarRecursivo(nodo->siguiente, condicion);
+		return suma;
 	}
 
+	// ============================================================
+	// METODO RECURSIVO - Integrante 1
+	// ============================================================
+	
+	// Buscar recursivamente - version privada
+	T buscarRecursivoPrivado(Nodo<T>* nodo, function<bool(T)> condicion) {
+		if (nodo == nullptr) return T();
+		if (condicion(nodo->dato)) return nodo->dato;
+		return buscarRecursivoPrivado(nodo->siguiente, condicion);
+	}
+
+	// Buscar recursivamente - version publica
 	T buscarRecursivo(function<bool(T)> condicion) {
-		return buscarRecursivo(inicio, condicion);
+		return buscarRecursivoPrivado(inicio, condicion);
 	}
 
-	// Metodo para ordenar por burbuja mejorado
-	void ordenarBurbuja(function<bool(T, T)> comparar) {
+	// ============================================================
+	// ALGORITMO DE ORDENAMIENTO - Integrante 1
+	// ============================================================
+	
+	// Integrante 1: Ordenamiento Burbuja (Bubble Sort)
+	// Complejidad: O(n²)
+	void ordenarBurbuja() {
 		if (estaVacia() || tamanio == 1) return;
-
+		
+		// Algoritmo de burbuja: compara pares adyacentes y los intercambia
 		for (int i = 0; i < tamanio - 1; i++) {
 			Nodo<T>* actual = inicio;
 			for (int j = 0; j < tamanio - i - 1; j++) {
-				if (comparar(actual->siguiente->dato, actual->dato)) {
-					// Intercambiar datos
-					T temp = actual->dato;
-					actual->dato = actual->siguiente->dato;
-					actual->siguiente->dato = temp;
+				// Si el siguiente nodo existe y es necesario intercambiar
+				if (actual->siguiente != nullptr) {
+					// Comparar los datos (desreferenciar si son punteros)
+					if (*actual->dato > *actual->siguiente->dato) {
+						// Intercambiar los datos entre nodos
+						T temp = actual->dato;
+						actual->dato = actual->siguiente->dato;
+						actual->siguiente->dato = temp;
+					}
 				}
 				actual = actual->siguiente;
 			}
 		}
 	}
 
-	// Metodo para contar elementos que cumplen condicion (Lambda 3)
-	int contar(function<bool(T)> condicion) {
-		int contador = 0;
-		Nodo<T>* actual = inicio;
-		while (actual != nullptr) {
-			if (condicion(actual->dato)) {
-				contador++;
-			}
-			actual = actual->siguiente;
-		}
-		return contador;
-	}
+	// ============================================================
+	// OTROS METODOS AUXILIARES (Estilo del Profesor)
+	// ============================================================
 
 	// Metodo para obtener el nodo inicial (util para iteracion)
 	Nodo<T>* getInicio() {

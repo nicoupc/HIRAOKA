@@ -13,7 +13,6 @@
 #include <limits>
 #include <functional>
 #include <fstream>
-#include <sstream>
 #include <iomanip>
 #include <ctime>
 
@@ -46,6 +45,9 @@ private:
 	void limpiarPantalla();
 	void pausa();
 
+	// ========== FUNCION AUXILIAR SIMPLE ==========
+	string dividirTexto(string texto, char separador, int posicion);
+
 	// ========== METODO PARA OBTENER FECHA ACTUAL ==========
 	string obtenerFechaActual();
 
@@ -60,6 +62,8 @@ private:
 	void buscarProducto();
 	void modificarProducto();
 	void eliminarProducto();
+	void ordenarProductos();
+	void verEstadisticasProductos();  // Usa lambdas
 
 	// ========== GESTION DE CLIENTES (PILA) ==========
 	void menuGestionClientes();
@@ -67,12 +71,16 @@ private:
 	void verTodosLosClientes();
 	void buscarCliente();
 	void verUltimoCliente();
+	void ordenarClientes();
+	void verEstadisticasClientes();  // Usa lambdas
 
 	// ========== GESTION DE VENTAS (COLA FIFO) ==========
 	void menuGestionVentas();
 	void verVentasPendientes();
 	void procesarSiguienteVenta();
 	void verPrimeraVenta();
+	void ordenarVentas();
+	void verEstadisticasVentas();  // Usa lambdas
 
 	// ========== FUNCIONES PARA CLIENTES ==========
 	void verCatalogoProductos();
@@ -92,6 +100,7 @@ private:
 	void cargarDatos();
 	void cargarInventario();
 	void cargarClientes();
+	void cargarVentas();  // Nueva función para cargar ventas
 
 public:
 	// Constructor

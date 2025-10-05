@@ -57,4 +57,13 @@ public:
 	string getNombreCompleto() {
 		return nombres + " " + apellidos;
 	}
+
+	// Operador de comparacion para ordenamiento (compara por DNI)
+	bool operator<(const Cliente& otro) const {
+		return dni < otro.dni;
+	}
+
+	bool operator>(const Cliente& otro) const {
+		return dni > otro.dni;
+	}
 };

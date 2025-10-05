@@ -1,17 +1,35 @@
 #include "SistemaGestionHiraoka.h"
 
+// ========== FUNCION AUXILIAR SIMPLE ==========
+// Funcion para dividir un texto por un separador
+// Ejemplo: dividirTexto("Juan|25|Lima", '|', 0) = "Juan"
+string SistemaGestionHiraoka::dividirTexto(string texto, char separador, int posicion) {
+	string resultado = "";
+	int posActual = 0;
+	
+	for (int i = 0; i < texto.length(); i++) {
+		if (texto[i] == separador) {
+			if (posActual == posicion) return resultado;
+			posActual++;
+			resultado = "";
+		}
+		else if (texto[i] != '\r' && texto[i] != '\n') {  // Ignorar saltos de linea
+			resultado += texto[i];
+		}
+	}
+	
+	if (posActual == posicion) return resultado;
+	return "";
+}
 
 void SistemaGestionHiraoka::cargarUsuarios() {
     ifstream archivo("usuarios.txt");
     if (archivo.is_open()) {
         string linea;
         while (getline(archivo, linea)) {
-            stringstream ss(linea);
-            string usuario, password, tipo;
-            getline(ss, usuario, '|');
-            getline(ss, password, '|');
-            getline(ss, tipo, '|');
-            
+            string usuario = dividirTexto(linea, '|', 0);
+            string password = dividirTexto(linea, '|', 1);
+            string tipo = dividirTexto(linea, '|', 2);
         }
         archivo.close();
     }
@@ -32,21 +50,9 @@ bool SistemaGestionHiraoka::loginAdmin() {
 	if (archivo.is_open()) {
 		string linea;
 		while (getline(archivo, linea)) {
-			// Eliminar caracteres de retorno de carro si existen
-			if (!linea.empty() && linea[linea.length()-1] == '\r') {
-				linea.erase(linea.length()-1);
-			}
-			
-			stringstream ss(linea);
-			string usuario, password, tipo;
-			getline(ss, usuario, '|');
-			getline(ss, password, '|');
-			getline(ss, tipo, '|');
-			
-			// Limpiar posibles espacios en blanco al final
-			if (!tipo.empty() && tipo[tipo.length()-1] == '\r') {
-				tipo.erase(tipo.length()-1);
-			}
+			string usuario = dividirTexto(linea, '|', 0);
+			string password = dividirTexto(linea, '|', 1);
+			string tipo = dividirTexto(linea, '|', 2);
 
 			if (usuario == user && password == pass && tipo == "admin") {
 				usuarioActual = usuario;
@@ -96,12 +102,13 @@ void SistemaGestionHiraoka::pausa() {
 // ========== METODO PARA OBTENER FECHA ACTUAL ==========
 string SistemaGestionHiraoka::obtenerFechaActual() {
 	time_t ahora = time(0);
-	tm tiempoLocal; localtime_s(&tiempoLocal, &ahora);
-	stringstream ss;
-	ss << setfill('0') << setw(2) << tiempoLocal.tm_mday << "/"
-		<< setw(2) << (tiempoLocal.tm_mon + 1) << "/"
-		<< (tiempoLocal.tm_year + 1900);
-	return ss.str();
+	tm tiempoLocal;
+	localtime_s(&tiempoLocal, &ahora);
+	
+	// Usar strftime para formatear la fecha - SIMPLE Y FACIL
+	char buffer[20];
+	strftime(buffer, 20, "%d/%m/%Y", &tiempoLocal);
+	return string(buffer);
 }
 
 // ========== MENU PRINCIPAL ==========
@@ -128,10 +135,15 @@ void SistemaGestionHiraoka::mostrarMenuCliente() {
 	if (dniClienteActual.empty()) {
 		cout << "    Modo: Invitado                     " << endl;
 	} else {
-		// Buscar nombre del cliente
-		Cliente* cliente = registroClientes.buscar([this](Cliente* cli) {
-			return cli->getDni() == dniClienteActual;
-		});
+		// Buscar nombre del cliente (estilo del profesor)
+		Cliente* cliente = nullptr;
+		for (int i = 0; i < registroClientes.getTamanio(); i++) {
+			Cliente* cli = registroClientes.obtenerEnPosicion(i);
+			if (cli->getDni() == dniClienteActual) {
+				cliente = cli;
+				break;
+			}
+		}
 		if (cliente != nullptr) {
 			cout << "    Cliente: " << cliente->getNombres() << endl;
 		}
@@ -176,6 +188,8 @@ void SistemaGestionHiraoka::menuGestionInventario() {
 		cout << "  3. Buscar producto                    " << endl;
 		cout << "  4. Modificar producto                 " << endl;
 		cout << "  5. Eliminar producto                  " << endl;
+		cout << "  6. Ordenar productos (Burbuja)        " << endl;
+		cout << "  7. Ver estadisticas (con Lambda)      " << endl;
 		cout << "  0. Volver                             " << endl;
 		cout << "========================================" << endl;
 		cout << "Seleccione una opcion: ";
@@ -187,6 +201,8 @@ void SistemaGestionHiraoka::menuGestionInventario() {
 		case 3: buscarProducto(); break;
 		case 4: modificarProducto(); break;
 		case 5: eliminarProducto(); break;
+		case 6: ordenarProductos(); break;
+		case 7: verEstadisticasProductos(); break;
 		case 0: break;
 		default: cout << "Opcion invalida." << endl; pausa(); break;
 		}
@@ -231,13 +247,14 @@ void SistemaGestionHiraoka::verTodosLosProductos() {
 	cout << "\nTotal: " << inventario.longitud() << " productos" << endl;
 	cout << "----------------------------------------" << endl;
 
-	// Mostrar todos con lambda
-	inventario.recorrer([](Electrodomestico* prod) {
+	// Mostrar todos (estilo del profesor - bucle for)
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
 		cout << "\n[" << prod->getCodigo() << "] " << prod->getNombre() << endl;
 		cout << "  Marca: " << prod->getMarca() << " | Modelo: " << prod->getModelo() << endl;
 		cout << "  Precio: S/. " << fixed << setprecision(2) << prod->getPrecio() << endl;
 		cout << "  Stock: " << prod->getStock() << " unidades" << endl;
-	});
+	}
 
 	cout << "----------------------------------------" << endl;
 	pausa();
@@ -258,12 +275,15 @@ void SistemaGestionHiraoka::buscarProducto() {
 	cout << "\nIngrese el codigo del producto: ";
 	cin >> codigo;
 
-	// Buscar con lambda recursiva
-	Electrodomestico* encontrado = inventario.buscarRecursivo(
-		[codigo](Electrodomestico* prod) {
-			return prod->getCodigo() == codigo;
+	// Buscar producto (estilo del profesor - bucle for)
+	Electrodomestico* encontrado = nullptr;
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
+		if (prod->getCodigo() == codigo) {
+			encontrado = prod;
+			break;
 		}
-	);
+	}
 
 	if (encontrado != nullptr) {
 		cout << "\n[OK] Producto encontrado!" << endl;
@@ -272,7 +292,7 @@ void SistemaGestionHiraoka::buscarProducto() {
 		cout << "Nombre: " << encontrado->getNombre() << endl;
 		cout << "Marca: " << encontrado->getMarca() << endl;
 		cout << "Modelo: " << encontrado->getModelo() << endl;
-		cout << "Precio: S/. " << fixed << setprecision(2) << encontrado->getPrecio() << endl;
+		cout << "Precio: S/. " << encontrado->getPrecio() << endl;
 		cout << "Stock: " << encontrado->getStock() << " unidades" << endl;
 		cout << "----------------------------------------" << endl;
 	}
@@ -293,14 +313,15 @@ void SistemaGestionHiraoka::modificarProducto() {
 		return;
 	}
 
-	// Mostrar lista primero
+	// Mostrar lista primero (estilo del profesor)
 	cout << "\nProductos disponibles:" << endl;
 	cout << "----------------------------------------" << endl;
-	inventario.recorrer([](Electrodomestico* prod) {
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
 		cout << "[" << prod->getCodigo() << "] " << prod->getNombre() 
-			 << " - Precio: S/. " << prod->getPrecio()
+			 << " - Precio: S/. " << fixed << setprecision(2) << prod->getPrecio()
 			 << " - Stock: " << prod->getStock() << endl;
-	});
+	}
 	cout << "----------------------------------------" << endl;
 
 	string codigo;
@@ -309,12 +330,15 @@ void SistemaGestionHiraoka::modificarProducto() {
 
 	if (codigo == "0") return;
 
-	// Buscar el producto
-	Electrodomestico* producto = inventario.buscarRecursivo(
-		[codigo](Electrodomestico* prod) {
-			return prod->getCodigo() == codigo;
+	// Buscar el producto (estilo del profesor)
+	Electrodomestico* producto = nullptr;
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
+		if (prod->getCodigo() == codigo) {
+			producto = prod;
+			break;
 		}
-	);
+	}
 
 	if (producto == nullptr) {
 		cout << "\nProducto no encontrado." << endl;
@@ -422,12 +446,13 @@ void SistemaGestionHiraoka::eliminarProducto() {
 		return;
 	}
 
-	// Mostrar lista primero
+	// Mostrar lista primero (estilo del profesor)
 	cout << "\nProductos registrados:" << endl;
 	cout << "----------------------------------------" << endl;
-	inventario.recorrer([](Electrodomestico* prod) {
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
 		cout << "[" << prod->getCodigo() << "] " << prod->getNombre() << endl;
-	});
+	}
 	cout << "----------------------------------------" << endl;
 
 	string codigo;
@@ -479,6 +504,8 @@ void SistemaGestionHiraoka::menuGestionClientes() {
 		cout << "  2. Ver todos los clientes             " << endl;
 		cout << "  3. Buscar cliente                     " << endl;
 		cout << "  4. Ver ultimo cliente (tope)          " << endl;
+		cout << "  5. Ordenar clientes (Insercion)       " << endl;
+		cout << "  6. Ver estadisticas (con Lambda)      " << endl;
 		cout << "  0. Volver                             " << endl;
 		cout << "========================================" << endl;
 		cout << "Seleccione una opcion: ";
@@ -489,6 +516,8 @@ void SistemaGestionHiraoka::menuGestionClientes() {
 		case 2: verTodosLosClientes(); break;
 		case 3: buscarCliente(); break;
 		case 4: verUltimoCliente(); break;
+		case 5: ordenarClientes(); break;
+		case 6: verEstadisticasClientes(); break;
 		case 0: break;
 		default: cout << "Opcion invalida." << endl; pausa(); break;
 		}
@@ -554,12 +583,13 @@ void SistemaGestionHiraoka::verTodosLosClientes() {
 	cout << "\nTotal: " << registroClientes.getTamanio() << " clientes" << endl;
 	cout << "----------------------------------------" << endl;
 
-	// Mostrar con recursividad
-	registroClientes.imprimirRecursivo([](Cliente* cli) {
+	// Mostrar todos los clientes (estilo del profesor)
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
 		cout << "\n[" << cli->getDni() << "] " << cli->getNombreCompleto() << endl;
 		cout << "  Telefono: " << cli->getTelefono() << endl;
 		cout << "  Direccion: " << cli->getDireccion() << endl;
-	});
+	}
 
 	cout << "----------------------------------------" << endl;
 	pausa();
@@ -580,10 +610,15 @@ void SistemaGestionHiraoka::buscarCliente() {
 	cout << "\nIngrese el DNI del cliente: ";
 	cin >> dni;
 
-	// Buscar con lambda
-	Cliente* encontrado = registroClientes.buscar([dni](Cliente* cli) {
-		return cli->getDni() == dni;
-	});
+	// Buscar cliente (estilo del profesor)
+	Cliente* encontrado = nullptr;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		if (cli->getDni() == dni) {
+			encontrado = cli;
+			break;
+		}
+	}
 
 	if (encontrado != nullptr) {
 		cout << "\n[OK] Cliente encontrado!" << endl;
@@ -613,6 +648,8 @@ void SistemaGestionHiraoka::menuGestionVentas() {
 		cout << "  1. Ver ventas pendientes              " << endl;
 		cout << "  2. Procesar siguiente venta (FIFO)    " << endl;
 		cout << "  3. Ver primera venta en cola          " << endl;
+		cout << "  4. Ordenar ventas (Seleccion)         " << endl;
+		cout << "  5. Ver estadisticas (con Lambda)      " << endl;
 		cout << "  0. Volver                             " << endl;
 		cout << "========================================" << endl;
 		cout << "Seleccione una opcion: ";
@@ -622,6 +659,8 @@ void SistemaGestionHiraoka::menuGestionVentas() {
 		case 1: verVentasPendientes(); break;
 		case 2: procesarSiguienteVenta(); break;
 		case 3: verPrimeraVenta(); break;
+		case 4: ordenarVentas(); break;
+		case 5: verEstadisticasVentas(); break;
 		case 0: break;
 		default: cout << "Opcion invalida." << endl; pausa(); break;
 		}
@@ -642,21 +681,23 @@ void SistemaGestionHiraoka::verVentasPendientes() {
 	int total = colaDeVentas.getTamanio();
 	cout << "\nTotal: " << total << " venta(s) pendiente(s)" << endl;
 
-	// Calcular monto total
+	// Calcular monto total (estilo del profesor)
 	double montoTotal = 0;
-	colaDeVentas.recorrer([&montoTotal](Venta* venta) {
+	for (int i = 0; i < colaDeVentas.getTamanio(); i++) {
+		Venta* venta = colaDeVentas.obtenerEnPosicion(i);
 		montoTotal += venta->getMontoTotal();
-	});
+	}
 	cout << "Monto total: S/. " << fixed << setprecision(2) << montoTotal << endl;
 	cout << "----------------------------------------" << endl;
 
-	// Mostrar todas con recursividad
-	colaDeVentas.imprimirRecursivo([](Venta* venta) {
+	// Mostrar todas (estilo del profesor)
+	for (int i = 0; i < colaDeVentas.getTamanio(); i++) {
+		Venta* venta = colaDeVentas.obtenerEnPosicion(i);
 		cout << "\n[" << venta->getIdVenta() << "] " << venta->getNombreCliente() << endl;
 		cout << "  Producto: " << venta->getNombreProducto() << endl;
 		cout << "  Cantidad: " << venta->getCantidad() << endl;
 		cout << "  Total: S/. " << fixed << setprecision(2) << venta->getMontoTotal() << endl;
-	});
+	}
 
 	cout << "----------------------------------------" << endl;
 	pausa();
@@ -709,7 +750,7 @@ void SistemaGestionHiraoka::verPrimeraVenta() {
 	cout << "Cliente: " << primera->getNombreCliente() << endl;
 	cout << "Producto: " << primera->getNombreProducto() << endl;
 	cout << "Cantidad: " << primera->getCantidad() << endl;
-	cout << "Total: S/. " << fixed << setprecision(2) << primera->getMontoTotal() << endl;
+	cout << "Total: S/. " << primera->getMontoTotal() << endl;
 	cout << "----------------------------------------" << endl;
 
 	pausa();
@@ -730,7 +771,8 @@ void SistemaGestionHiraoka::verCatalogoProductos() {
 	}
 
 	int contador = 1;
-	inventario.recorrer([&contador](Electrodomestico* prod) {
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
 		if (prod->getStock() > 0) {
 			cout << "----------------------------------------" << endl;
 			cout << " " << contador++ << ". " << prod->getNombre() << endl;
@@ -740,7 +782,7 @@ void SistemaGestionHiraoka::verCatalogoProductos() {
 			cout << "    Codigo: " << prod->getCodigo() << endl;
 			cout << "----------------------------------------" << endl;
 		}
-	});
+	}
 
 	if (contador == 1) {
 		cout << "No hay productos con stock disponible." << endl;
@@ -761,16 +803,17 @@ void SistemaGestionHiraoka::agregarAlCarrito() {
 		return;
 	}
 
-	// Mostrar productos disponibles de forma compacta
+	// Mostrar productos disponibles de forma compacta (estilo del profesor)
 	cout << "Productos disponibles:\n" << endl;
-	inventario.recorrer([](Electrodomestico* prod) {
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
 		if (prod->getStock() > 0) {
 			cout << "  [" << prod->getCodigo() << "] " 
 				 << prod->getNombre() 
-				 << " - S/. " << fixed << setprecision(2) << prod->getPrecio()
+				 << " - S/. " << prod->getPrecio()
 				 << " (Stock: " << prod->getStock() << ")" << endl;
 		}
-	});
+	}
 
 	cout << "\nIngrese el codigo del producto (o '0' para cancelar): ";
 	string codigo;
@@ -778,12 +821,15 @@ void SistemaGestionHiraoka::agregarAlCarrito() {
 
 	if (codigo == "0") return;
 
-	// Buscar el producto
-	Electrodomestico* producto = inventario.buscarRecursivo(
-		[codigo](Electrodomestico* prod) {
-			return prod->getCodigo() == codigo;
+	// Buscar el producto (estilo del profesor)
+	Electrodomestico* producto = nullptr;
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
+		if (prod->getCodigo() == codigo) {
+			producto = prod;
+			break;
 		}
-	);
+	}
 
 	if (producto == nullptr) {
 		cout << "\nProducto no encontrado." << endl;
@@ -865,15 +911,17 @@ void SistemaGestionHiraoka::verCarrito() {
 
 	double total = 0;
 	int index = 1;
-	carritoActual.recorrer([&total, &index](ItemCarrito* item) {
+	// Recorrer carrito (estilo del profesor)
+	for (int i = 0; i < carritoActual.longitud(); i++) {
+		ItemCarrito* item = carritoActual.obtenerPosicion(i);
 		cout << " " << index++ << ". ";
 		Electrodomestico* prod = item->getProducto();
 		cout << prod->getNombre() << endl;
 		cout << "    Cantidad: " << item->getCantidad() 
-			 << " x S/. " << fixed << setprecision(2) << prod->getPrecio()
-			 << " = S/. " << item->getSubtotal() << endl;
+			 << " x S/. " << prod->getPrecio()
+			 << " = S/. " << fixed << setprecision(2) << item->getSubtotal() << endl;
 		total += item->getSubtotal();
-	});
+	}
 
 	cout << "----------------------------------------" << endl;
 	cout << " TOTAL A PAGAR: S/. " << fixed << setprecision(2) << total << endl;
@@ -900,12 +948,13 @@ void SistemaGestionHiraoka::modificarCarrito() {
 	cout << "        MODIFICAR CARRITO               " << endl;
 	cout << "========================================\n" << endl;
 
-	// Mostrar items con índice
+	// Mostrar items con índice (estilo del profesor)
 	int index = 1;
-	carritoActual.recorrer([&index](ItemCarrito* item) {
+	for (int i = 0; i < carritoActual.longitud(); i++) {
+		ItemCarrito* item = carritoActual.obtenerPosicion(i);
 		cout << index++ << ". " << item->getProducto()->getNombre()
 			 << " (Cantidad: " << item->getCantidad() << ")" << endl;
-	});
+	}
 
 	cout << "\nQue producto deseas modificar? (numero, 0 para cancelar): ";
 	int numProducto;
@@ -973,20 +1022,21 @@ void SistemaGestionHiraoka::finalizarCompra() {
 		return;
 	}
 
-	// Mostrar resumen de compra primero
+	// Mostrar resumen de compra primero (estilo del profesor)
 	cout << "========================================" << endl;
 	cout << "        RESUMEN DE COMPRA               " << endl;
 	cout << "========================================" << endl;
 
 	double total = 0;
-	carritoActual.recorrer([&total](ItemCarrito* item) {
+	for (int i = 0; i < carritoActual.longitud(); i++) {
+		ItemCarrito* item = carritoActual.obtenerPosicion(i);
 		Electrodomestico* prod = item->getProducto();
 		cout << "  " << prod->getNombre() << endl;
-		cout << "  " << item->getCantidad() << " x S/. " << fixed << setprecision(2) 
-			 << prod->getPrecio() << " = S/. " << item->getSubtotal() << endl;
+		cout << "  " << item->getCantidad() << " x S/. " << prod->getPrecio()
+			 << " = S/. " << fixed << setprecision(2) << item->getSubtotal() << endl;
 		cout << "  --------------------------------------" << endl;
 		total += item->getSubtotal();
-	});
+	}
 
 	cout << "\n  TOTAL A PAGAR: S/. " << fixed << setprecision(2) << total << endl;
 	cout << "========================================\n" << endl;
@@ -1001,10 +1051,15 @@ void SistemaGestionHiraoka::finalizarCompra() {
 		cout << "DNI: ";
 		cin >> dni;
 		
-		// Verificar si ya existe
-		Cliente* existe = registroClientes.buscar([dni](Cliente* cli) {
-			return cli->getDni() == dni;
-		});
+		// Verificar si ya existe (estilo del profesor)
+		Cliente* existe = nullptr;
+		for (int i = 0; i < registroClientes.getTamanio(); i++) {
+			Cliente* cli = registroClientes.obtenerEnPosicion(i);
+			if (cli->getDni() == dni) {
+				existe = cli;
+				break;
+			}
+		}
 		
 		if (existe != nullptr) {
 			// Ya tiene cuenta
@@ -1040,10 +1095,15 @@ void SistemaGestionHiraoka::finalizarCompra() {
 		return;
 	}
 
-	// Buscar datos del cliente
-	Cliente* cliente = registroClientes.buscar([this](Cliente* cli) {
-		return cli->getDni() == dniClienteActual;
-	});
+	// Buscar datos del cliente (estilo del profesor)
+	Cliente* cliente = nullptr;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		if (cli->getDni() == dniClienteActual) {
+			cliente = cli;
+			break;
+		}
+	}
 
 	if (cliente == nullptr) {
 		cout << "\nError: Cliente no encontrado." << endl;
@@ -1128,10 +1188,15 @@ void SistemaGestionHiraoka::miCuenta() {
 		return;
 	}
 
-	// Buscar cliente
-	Cliente* cliente = registroClientes.buscar([this](Cliente* cli) {
-		return cli->getDni() == dniClienteActual;
-	});
+	// Buscar cliente (estilo del profesor)
+	Cliente* cliente = nullptr;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		if (cli->getDni() == dniClienteActual) {
+			cliente = cli;
+			break;
+		}
+	}
 
 	if (cliente == nullptr) {
 		cout << "Error: No se encontro informacion de la cuenta." << endl;
@@ -1164,10 +1229,15 @@ void SistemaGestionHiraoka::registrarMiCuenta() {
 	cout << "DNI: ";
 	cin >> dni;
 
-	// Verificar si ya existe
-	Cliente* existe = registroClientes.buscar([dni](Cliente* cli) {
-		return cli->getDni() == dni;
-	});
+	// Verificar si ya existe (estilo del profesor)
+	Cliente* existe = nullptr;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		if (cli->getDni() == dni) {
+			existe = cli;
+			break;
+		}
+	}
 
 	if (existe != nullptr) {
 		cout << "\n[OK] Este DNI ya esta registrado." << endl;
@@ -1216,10 +1286,15 @@ void SistemaGestionHiraoka::iniciarSesionCliente() {
 	cout << "Ingresa tu DNI: ";
 	cin >> dni;
 	
-	// Buscar cliente
-	Cliente* cliente = registroClientes.buscar([dni](Cliente* cli) {
-		return cli->getDni() == dni;
-	});
+	// Buscar cliente (estilo del profesor)
+	Cliente* cliente = nullptr;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		if (cli->getDni() == dni) {
+			cliente = cli;
+			break;
+		}
+	}
 	
 	if (cliente != nullptr) {
 		dniClienteActual = dni;
@@ -1249,7 +1324,9 @@ void SistemaGestionHiraoka::guardarDatos() {
 void SistemaGestionHiraoka::guardarInventario() {
 	ofstream archivo("inventario.txt");
 	if (archivo.is_open()) {
-		inventario.recorrer([&archivo](Electrodomestico* prod) {
+		// Guardar productos (estilo del profesor)
+		for (int i = 0; i < inventario.longitud(); i++) {
+			Electrodomestico* prod = inventario.obtenerPosicion(i);
 			archivo << prod->getCodigo() << "|"
 				<< prod->getNombre() << "|"
 				<< prod->getMarca() << "|"
@@ -1257,7 +1334,7 @@ void SistemaGestionHiraoka::guardarInventario() {
 				<< prod->getPrecio() << "|"
 				<< prod->getAnioFabricacion() << "|"
 				<< prod->getStock() << endl;
-			});
+		}
 		archivo.close();
 	}
 }
@@ -1265,13 +1342,15 @@ void SistemaGestionHiraoka::guardarInventario() {
 void SistemaGestionHiraoka::guardarClientes() {
 	ofstream archivo("clientes.txt");
 	if (archivo.is_open()) {
-		registroClientes.recorrer([&archivo](Cliente* cli) {
+		// Guardar clientes (estilo del profesor)
+		for (int i = 0; i < registroClientes.getTamanio(); i++) {
+			Cliente* cli = registroClientes.obtenerEnPosicion(i);
 			archivo << cli->getDni() << "|"
 				<< cli->getNombres() << "|"
 				<< cli->getApellidos() << "|"
 				<< cli->getTelefono() << "|"
 				<< cli->getDireccion() << endl;
-			});
+		}
 		archivo.close();
 	}
 }
@@ -1280,6 +1359,7 @@ void SistemaGestionHiraoka::guardarClientes() {
 void SistemaGestionHiraoka::cargarDatos() {
 	cargarInventario();
 	cargarClientes();
+	cargarVentas();  // Agregar carga de ventas
 }
 
 void SistemaGestionHiraoka::cargarInventario() {
@@ -1287,17 +1367,15 @@ void SistemaGestionHiraoka::cargarInventario() {
 	if (archivo.is_open()) {
 		string linea;
 		while (getline(archivo, linea)) {
-			stringstream ss(linea);
-			string codigo, nombre, marca, modelo, precioStr, anioStr, stockStr;
+			string codigo = dividirTexto(linea, '|', 0);
+			string nombre = dividirTexto(linea, '|', 1);
+			string marca = dividirTexto(linea, '|', 2);
+			string modelo = dividirTexto(linea, '|', 3);
+			string precioStr = dividirTexto(linea, '|', 4);
+			string anioStr = dividirTexto(linea, '|', 5);
+			string stockStr = dividirTexto(linea, '|', 6);
 
-			getline(ss, codigo, '|');
-			getline(ss, nombre, '|');
-			getline(ss, marca, '|');
-			getline(ss, modelo, '|');
-			getline(ss, precioStr, '|');
-			getline(ss, anioStr, '|');
-			getline(ss, stockStr, '|');
-
+			// Usar funciones simples de C++ para convertir
 			double precio = stod(precioStr);
 			int anio = stoi(anioStr);
 			int stock = stoi(stockStr);
@@ -1314,17 +1392,40 @@ void SistemaGestionHiraoka::cargarClientes() {
 	if (archivo.is_open()) {
 		string linea;
 		while (getline(archivo, linea)) {
-			stringstream ss(linea);
-			string dni, nombres, apellidos, telefono, direccion;
-
-			getline(ss, dni, '|');
-			getline(ss, nombres, '|');
-			getline(ss, apellidos, '|');
-			getline(ss, telefono, '|');
-			getline(ss, direccion, '|');
+			string dni = dividirTexto(linea, '|', 0);
+			string nombres = dividirTexto(linea, '|', 1);
+			string apellidos = dividirTexto(linea, '|', 2);
+			string telefono = dividirTexto(linea, '|', 3);
+			string direccion = dividirTexto(linea, '|', 4);
 
 			Cliente* cli = new Cliente(dni, nombres, apellidos, telefono, direccion);
 			registroClientes.apilar(cli);
+		}
+		archivo.close();
+	}
+}
+
+void SistemaGestionHiraoka::cargarVentas() {
+	ifstream archivo("historial_ventas.txt");
+	if (archivo.is_open()) {
+		string linea;
+		while (getline(archivo, linea)) {
+			string idVenta = dividirTexto(linea, '|', 0);
+			string fecha = dividirTexto(linea, '|', 1);
+			string dniCliente = dividirTexto(linea, '|', 2);
+			string nombreCliente = dividirTexto(linea, '|', 3);
+			string codigoProducto = dividirTexto(linea, '|', 4);
+			string nombreProducto = dividirTexto(linea, '|', 5);
+			string cantidadStr = dividirTexto(linea, '|', 6);
+			string precioStr = dividirTexto(linea, '|', 7);
+
+			// Convertir strings a números
+			int cantidad = stoi(cantidadStr);
+			double precio = stod(precioStr);
+
+			Venta* venta = new Venta(idVenta, fecha, dniCliente, nombreCliente, 
+									 codigoProducto, nombreProducto, cantidad, precio);
+			colaDeVentas.encolar(venta);
 		}
 		archivo.close();
 	}
@@ -1483,4 +1584,215 @@ void SistemaGestionHiraoka::iniciar() {
 			break;
 		}
 	} while (opcionInicial != 0);
+}
+
+// ========== FUNCIONES DE ORDENAMIENTO (USO DE ALGORITMOS) ==========
+
+// Ordenar productos usando Burbuja (Integrante 1 - Lista)
+void SistemaGestionHiraoka::ordenarProductos() {
+	limpiarPantalla();
+	cout << "\n========== ORDENAR PRODUCTOS ==========" << endl;
+	
+	if (inventario.estaVacia()) {
+		cout << "\nNo hay productos para ordenar." << endl;
+		pausa();
+		return;
+	}
+	
+	cout << "\nOrdenando productos por codigo (Algoritmo Burbuja)..." << endl;
+	inventario.ordenarBurbuja();
+	cout << "\n[OK] Productos ordenados exitosamente!" << endl;
+	cout << "\nProductos ordenados:" << endl;
+	cout << "----------------------------------------" << endl;
+	
+	// Mostrar productos ordenados
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
+		cout << "[" << prod->getCodigo() << "] " << prod->getNombre() << endl;
+	}
+	
+	cout << "----------------------------------------" << endl;
+	guardarDatos(); // Guardar cambios
+	pausa();
+}
+
+// Ordenar clientes usando Insercion (Integrante 2 - Pila)
+void SistemaGestionHiraoka::ordenarClientes() {
+	limpiarPantalla();
+	cout << "\n========== ORDENAR CLIENTES ==========" << endl;
+	
+	if (registroClientes.estaVacia()) {
+		cout << "\nNo hay clientes para ordenar." << endl;
+		pausa();
+		return;
+	}
+	
+	cout << "\nOrdenando clientes por DNI (Algoritmo Insercion)..." << endl;
+	registroClientes.ordenarInsercion();
+	cout << "\n[OK] Clientes ordenados exitosamente!" << endl;
+	cout << "\nClientes ordenados:" << endl;
+	cout << "----------------------------------------" << endl;
+	
+	// Mostrar clientes ordenados
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		cout << "[" << cli->getDni() << "] " << cli->getNombreCompleto() << endl;
+	}
+	
+	cout << "----------------------------------------" << endl;
+	guardarDatos(); // Guardar cambios
+	pausa();
+}
+
+// Estadisticas de productos usando LAS 3 LAMBDAS (Integrante 1 - Lista)
+void SistemaGestionHiraoka::verEstadisticasProductos() {
+	limpiarPantalla();
+	cout << "\n========== ESTADISTICAS - PRODUCTOS ==========\n" << endl;
+	
+	if (inventario.estaVacia()) {
+		cout << "No hay productos registrados." << endl;
+		pausa();
+		return;
+	}
+	
+	// Lambda 1: Contar elementos
+	cout << "Total de productos: " << inventario.contarElementos() << endl;
+	cout << "  [Lambda usada: auto contar = [](int a, int b) { return a + b; }]" << endl;
+	
+	// Lambda 2: Sumar stocks usando sumarElementos()
+	Lista<int> listaStocks;
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
+		listaStocks.agregarFinal(prod->getStock());
+	}
+	int stockTotal = listaStocks.sumarElementos();
+	cout << "\nUnidades en stock: " << stockTotal << endl;
+	cout << "  [Lambda usada: auto sumar = [](int a, int b) { return a + b; }]" << endl;
+	
+	// Lambda 3: Mostrar precios usando mostrarTodos()
+	Lista<double> listaPrecios;
+	for (int i = 0; i < inventario.longitud(); i++) {
+		Electrodomestico* prod = inventario.obtenerPosicion(i);
+		listaPrecios.agregarFinal(prod->getPrecio());
+	}
+	double precioTotal = listaPrecios.sumarElementos();
+	cout << "\nPrecio promedio: S/. " << fixed << setprecision(2) 
+		 << (precioTotal / inventario.contarElementos()) << endl;
+	
+	cout << "\nTodos los precios: ";
+	listaPrecios.mostrarTodos();
+	cout << "  [Lambda usada: auto mostrar = [](double dato) { cout << dato << \" \"; }]" << endl;
+	
+	cout << "\n========================================" << endl;
+	pausa();
+}
+
+// Estadisticas de clientes usando LAS 3 LAMBDAS (Integrante 2 - Pila)
+void SistemaGestionHiraoka::verEstadisticasClientes() {
+	limpiarPantalla();
+	cout << "\n========== ESTADISTICAS - CLIENTES ==========\n" << endl;
+	
+	if (registroClientes.estaVacia()) {
+		cout << "No hay clientes registrados." << endl;
+		pausa();
+		return;
+	}
+	
+	// Lambda 1: Contar elementos
+	cout << "Total de clientes: " << registroClientes.contarElementos() << endl;
+	cout << "  [Lambda usada: auto contar = [](int a, int b) { return a + b; }]" << endl;
+	
+	// Lambda 2: Mostrar DNIs usando mostrarTodos()
+	Lista<string> listaDNIs;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		listaDNIs.agregarFinal(cli->getDni());
+	}
+	cout << "\nDNIs de clientes: ";
+	listaDNIs.mostrarTodos();
+	cout << "  [Lambda usada: auto mostrar = [](string dato) { cout << dato << \" \"; }]" << endl;
+	
+	// Lambda 3: Contar clientes en Lima
+	int clientesLima = 0;
+	for (int i = 0; i < registroClientes.getTamanio(); i++) {
+		Cliente* cli = registroClientes.obtenerEnPosicion(i);
+		if (cli->getDireccion().find("Lima") != string::npos) {
+			clientesLima++;
+		}
+	}
+	cout << "\nClientes en Lima: " << clientesLima << endl;
+	
+	// Cliente mas reciente (tope de pila)
+	if (!registroClientes.estaVacia()) {
+		Cliente* ultimo = registroClientes.obtenerEnPosicion(0);
+		cout << "Ultimo registrado: " << ultimo->getNombreCompleto() << endl;
+	}
+	
+	cout << "\n========================================" << endl;
+	pausa();
+}
+
+// Estadisticas de ventas usando LAS 3 LAMBDAS (Integrante 3 - Cola)
+void SistemaGestionHiraoka::verEstadisticasVentas() {
+	limpiarPantalla();
+	cout << "\n========== ESTADISTICAS - VENTAS ==========\n" << endl;
+	
+	if (colaDeVentas.esVacia()) {
+		cout << "No hay ventas registradas." << endl;
+		pausa();
+		return;
+	}
+	
+	// Lambda 1: Contar elementos
+	cout << "Total de ventas: " << colaDeVentas.contarElementos() << endl;
+	cout << "  [Lambda usada: auto contar = [](int a, int b) { return a + b; }]" << endl;
+	
+	// Lambda 2: Sumar montos usando sumarElementos()
+	Lista<double> listaMontos;
+	for (int i = 0; i < colaDeVentas.getTamanio(); i++) {
+		Venta* venta = colaDeVentas.obtenerEnPosicion(i);
+		listaMontos.agregarFinal(venta->getMontoTotal());
+	}
+	double montoTotal = listaMontos.sumarElementos();
+	cout << "\nMonto total: S/. " << fixed << setprecision(2) << montoTotal << endl;
+	cout << "  [Lambda usada: auto sumar = [](double a, double b) { return a + b; }]" << endl;
+	
+	cout << "\nVenta promedio: S/. " << (montoTotal / colaDeVentas.contarElementos()) << endl;
+	
+	// Lambda 3: Mostrar todos los montos
+	cout << "\nTodos los montos: S/. ";
+	listaMontos.mostrarTodos();
+	cout << "  [Lambda usada: auto mostrar = [](double dato) { cout << dato << \" \"; }]" << endl;
+	
+	cout << "\n========================================" << endl;
+	pausa();
+}
+
+
+// Ordenar ventas usando Seleccion (Integrante 3 - Cola)
+void SistemaGestionHiraoka::ordenarVentas() {
+	limpiarPantalla();
+	cout << "\n========== ORDENAR VENTAS ==========" << endl;
+	
+	if (colaDeVentas.esVacia()) {
+		cout << "\nNo hay ventas para ordenar." << endl;
+		pausa();
+		return;
+	}
+	
+	cout << "\nOrdenando ventas por ID (Algoritmo Seleccion)..." << endl;
+	colaDeVentas.ordenarSeleccion();
+	cout << "\n[OK] Ventas ordenadas exitosamente!" << endl;
+	cout << "\nVentas ordenadas:" << endl;
+	cout << "----------------------------------------" << endl;
+	
+	// Mostrar ventas ordenadas
+	for (int i = 0; i < colaDeVentas.getTamanio(); i++) {
+		Venta* venta = colaDeVentas.obtenerEnPosicion(i);
+		cout << "[" << venta->getIdVenta() << "] " << venta->getNombreCliente() 
+			 << " - S/. " << fixed << setprecision(2) << venta->getMontoTotal() << endl;
+	}
+	
+	cout << "----------------------------------------" << endl;
+	pausa();
 }

@@ -1,0 +1,7 @@
+V003|2025-01-15|12345678|Ana Lopez|P001|Televisor Sony|1|2799.00
+V001|2025-01-10|87654321|Carlos Mendoza|P002|Lavadora Samsung|2|1899.00
+V005|2025-01-20|45678901|Maria Garcia|P005|Refrigeradora LG|1|2499.00
+V002|2025-01-12|23456789|Juan Perez|P003|Licuadora Oster|3|189.00
+V007|2025-01-25|67890123|Pedro Rodriguez|P008|Microondas Panasonic|2|399.00
+V004|2025-01-18|34567890|Sofia Martinez|P006|Cocina Indurama|1|899.00
+V006|2025-01-22|56789012|Luis Fernandez|P004|Ventilador Sole|4|159.00

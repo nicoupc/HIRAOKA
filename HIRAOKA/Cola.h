@@ -91,64 +91,118 @@ public:
 		return inicio->dato;
 	}
 
-	// Metodo para recorrer con lambda (REQUERIMIENTO: Lambda 1)
-	void recorrer(function<void(T)> accion)
-	{
+	// ============================================================
+	// METODOS CON LAMBDAS (3 requeridos)
+	// ============================================================
+	
+	// Lambda 1: Mostrar todos los elementos
+	void mostrarTodos() {
+		auto mostrar = [](T dato) { cout << dato << " "; };
+		
 		Nodo<T>* actual = inicio;
-		while (actual != nullptr)
-		{
-			accion(actual->dato);
+		while (actual != nullptr) {
+			mostrar(actual->dato);
 			actual = actual->siguiente;
 		}
+		cout << endl;
 	}
 
-	// Metodo para contar con lambda (REQUERIMIENTO: Lambda 2)
-	int contar(function<bool(T)> condicion)
-	{
-		int contador = 0;
+	// Lambda 2: Contar elementos
+	int contarElementos() {
+		auto contar = [](int a, int b) { return a + b; };
+		
+		int total = 0;
 		Nodo<T>* actual = inicio;
-		while (actual != nullptr)
-		{
-			if (condicion(actual->dato))
-			{
-				contador++;
-			}
+		while (actual != nullptr) {
+			total = contar(total, 1);
 			actual = actual->siguiente;
 		}
-		return contador;
+		return total;
 	}
 
-	// Metodo para buscar con lambda (REQUERIMIENTO: Lambda 3)
-	T buscar(function<bool(T)> condicion)
-	{
+	// Lambda 3: Sumar elementos
+	T sumarElementos() {
+		auto sumar = [](T a, T b) { return a + b; };
+		
+		T suma = T();
 		Nodo<T>* actual = inicio;
-		while (actual != nullptr)
-		{
-			if (condicion(actual->dato))
-			{
-				return actual->dato;
-			}
+		while (actual != nullptr) {
+			suma = sumar(suma, actual->dato);
 			actual = actual->siguiente;
 		}
-		return T();
+		return suma;
 	}
 
-	// Metodo recursivo para imprimir (REQUERIMIENTO: Recursividad)
-	void imprimirRecursivo(Nodo<T>* nodo, function<void(T)> mostrar)
-	{
+	// ============================================================
+	// METODO RECURSIVO - Integrante 3
+	// ============================================================
+	
+	// Imprimir recursivamente - version privada
+	void imprimirRecursivoPrivado(Nodo<T>* nodo, function<void(T)> accion) {
 		if (nodo == nullptr) return;
-		mostrar(nodo->dato);
-		imprimirRecursivo(nodo->siguiente, mostrar);
+		accion(nodo->dato);
+		imprimirRecursivoPrivado(nodo->siguiente, accion);
 	}
 
-	void imprimirRecursivo(function<void(T)> mostrar)
-	{
-		imprimirRecursivo(inicio, mostrar);
+	// Imprimir recursivamente - version publica
+	void imprimirRecursivo(function<void(T)> accion) {
+		imprimirRecursivoPrivado(inicio, accion);
 	}
 
-	// Metodo para obtener el inicio (util para otras operaciones)
-	Nodo<T>* getInicio()
-	{
+	// ============================================================
+	// ALGORITMO DE ORDENAMIENTO - Integrante 3
+	// ============================================================
+	
+	// Integrante 3: Ordenamiento por Selección (Selection Sort)
+	// Complejidad: O(n²)
+	void ordenarSeleccion() {
+		if (esVacia() || tamanio == 1) return;
+		
+		// Recorrer toda la cola
+		Nodo<T>* actual = inicio;
+		while (actual != nullptr) {
+			// Buscar el elemento mínimo desde actual hasta el final
+			Nodo<T>* minimo = actual;
+			Nodo<T>* temp = actual->siguiente;
+			
+			while (temp != nullptr) {
+				// Comparar desreferenciando si son punteros
+				if (*temp->dato < *minimo->dato) {
+					minimo = temp;
+				}
+				temp = temp->siguiente;
+			}
+			
+			// Intercambiar el dato del nodo actual con el mínimo encontrado
+			if (minimo != actual) {
+				T aux = actual->dato;
+				actual->dato = minimo->dato;
+				minimo->dato = aux;
+			}
+			
+			actual = actual->siguiente;
+		}
+	}
+
+	// ============================================================
+	// OTROS METODOS AUXILIARES (Estilo del Profesor)
+	// ============================================================
+	
+	// Metodo para obtener elemento en una posicion (como el profesor)
+	T obtenerEnPosicion(int posicion) {
+		if (posicion < 0 || posicion >= tamanio) {
+			return T();
+		}
+		
+		Nodo<T>* actual = inicio;
+		for (int i = 0; i < posicion; i++) {
+			actual = actual->siguiente;
+		}
+		
+		return actual->dato;
+	}
+
+	Nodo<T>* getInicio() {
 		return inicio;
 	}
 };

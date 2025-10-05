@@ -79,4 +79,13 @@ public:
 	void aumentarStock(int cantidad) {
 		stock += cantidad;
 	}
+
+	// Operador de comparacion para ordenamiento (compara por codigo)
+	bool operator<(const Electrodomestico& otro) const {
+		return codigo < otro.codigo;
+	}
+
+	bool operator>(const Electrodomestico& otro) const {
+		return codigo > otro.codigo;
+	}
 };

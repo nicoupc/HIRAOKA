@@ -23,10 +23,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="diagrama.md" />
     <None Include="requerimientos.md" />
-    <None Include="..\DOCUMENTACION_TECNICA.md" />
-    <None Include="..\RESUMEN_IMPLEMENTACION.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SistemaGestionHiraoka.h">

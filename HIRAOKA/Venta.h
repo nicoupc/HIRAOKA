@@ -89,4 +89,13 @@ public:
 		montoTotal = cantidad * precioUnitario;
 		return montoTotal;
 	}
+
+	// Operador de comparacion para ordenamiento (compara por ID)
+	bool operator<(const Venta& otra) const {
+		return idVenta < otra.idVenta;
+	}
+
+	bool operator>(const Venta& otra) const {
+		return idVenta > otra.idVenta;
+	}
 };

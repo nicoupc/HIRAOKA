@@ -127,12 +127,6 @@
     <ClCompile Include="SistemaGestionHiraoka.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\DOCUMENTACION_TECNICA.md" />
-    <None Include="..\RESUMEN_IMPLEMENTACION.md" />
-    <None Include="diagrama.md">
-      <SubType>
-      </SubType>
-    </None>
     <None Include="requerimientos.md">
       <SubType>
       </SubType>

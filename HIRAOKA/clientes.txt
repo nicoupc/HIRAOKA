@@ -1,4 +1,8 @@
-55555|jorge|gonzales|99999|lima
-66666|maria|sanchez|99999|miraflores
-88888|ana|lopez|99999|san isidro
-77777|juan|perez|99999|san miguel
+87654321|Carlos|Mendoza|987654321|Av. Larco 456, Miraflores
+78901234|Carmen|Torres|978901234|Calle Lima 678, Barranco
+67890123|Pedro|Rodriguez|967890123|Av. Arequipa 567, Lince
+56789012|Luis|Fernandez|956789012|Av. Javier Prado 345, San Borja
+45678901|Maria|Garcia|945678901|Av. Brasil 789, Pueblo Libre
+34567890|Sofia|Martinez|934567890|Jr. Cusco 890, Cercado
+23456789|Juan|Perez|923456789|Calle Real 234, San Isidro
+12345678|Ana|Lopez|912345678|Jr. Union 123, Lima

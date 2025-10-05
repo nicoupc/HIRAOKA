@@ -71,59 +71,118 @@ public:
 		return cima->dato;
 	}
 
-	// Metodo para imprimir recursivamente (REQUERIMIENTO: Recursividad)
-	void imprimirRecursivo(Nodo<T>* nodo, function<void(T)> mostrar)
-	{
-		if (nodo == nullptr) return;
-		imprimirRecursivo(nodo->siguiente, mostrar);
-		mostrar(nodo->dato);
-	}
-
-	void imprimirRecursivo(function<void(T)> mostrar)
-	{
-		imprimirRecursivo(cima, mostrar);
-	}
-
-	// Metodo para recorrer con lambda (REQUERIMIENTO: Lambda 1)
-	void recorrer(function<void(T)> accion)
-	{
+	// ============================================================
+	// METODOS CON LAMBDAS (3 requeridos)
+	// ============================================================
+	
+	// Lambda 1: Mostrar todos los elementos
+	void mostrarTodos() {
+		auto mostrar = [](T dato) { cout << dato << " "; };
+		
 		Nodo<T>* actual = cima;
-		while (actual != nullptr)
-		{
-			accion(actual->dato);
+		while (actual != nullptr) {
+			mostrar(actual->dato);
 			actual = actual->siguiente;
 		}
+		cout << endl;
 	}
 
-	// Metodo para buscar con lambda (REQUERIMIENTO: Lambda 2)
-	T buscar(function<bool(T)> condicion)
-	{
+	// Lambda 2: Contar elementos
+	int contarElementos() {
+		auto contar = [](int a, int b) { return a + b; };
+		
+		int total = 0;
 		Nodo<T>* actual = cima;
-		while (actual != nullptr)
-		{
-			if (condicion(actual->dato))
-			{
-				return actual->dato;
+		while (actual != nullptr) {
+			total = contar(total, 1);
+			actual = actual->siguiente;
+		}
+		return total;
+	}
+
+	// Lambda 3: Sumar elementos
+	T sumarElementos() {
+		auto sumar = [](T a, T b) { return a + b; };
+		
+		T suma = T();
+		Nodo<T>* actual = cima;
+		while (actual != nullptr) {
+			suma = sumar(suma, actual->dato);
+			actual = actual->siguiente;
+		}
+		return suma;
+	}
+
+	// ============================================================
+	// METODO RECURSIVO - Integrante 2
+	// ============================================================
+	
+	// Contar elementos recursivamente - version privada
+	int contarRecursivoPrivado(Nodo<T>* nodo) {
+		if (nodo == nullptr) return 0;
+		return 1 + contarRecursivoPrivado(nodo->siguiente);
+	}
+
+	// Contar elementos recursivamente - version publica
+	int contarRecursivo() {
+		return contarRecursivoPrivado(cima);
+	}
+
+	// ============================================================
+	// ALGORITMO DE ORDENAMIENTO - Integrante 2
+	// ============================================================
+	
+	// Integrante 2: Ordenamiento por Inserción (Insertion Sort)
+	// Complejidad: O(n²)
+	void ordenarInsercion() {
+		if (estaVacia() || tamanio == 1) return;
+		
+		// Crear una pila temporal ordenada
+		Nodo<T>* ordenado = nullptr;
+		Nodo<T>* actual = cima;
+		
+		// Procesar cada elemento
+		while (actual != nullptr) {
+			Nodo<T>* siguiente = actual->siguiente;
+			
+			// Insertar en la posición correcta en la pila ordenada
+			// Comparar desreferenciando si son punteros
+			if (ordenado == nullptr || *actual->dato < *ordenado->dato) {
+				// Insertar al inicio
+				actual->siguiente = ordenado;
+				ordenado = actual;
+			} else {
+				// Buscar posición correcta
+				Nodo<T>* temp = ordenado;
+				while (temp->siguiente != nullptr && *temp->siguiente->dato < *actual->dato) {
+					temp = temp->siguiente;
+				}
+				actual->siguiente = temp->siguiente;
+				temp->siguiente = actual;
 			}
-			actual = actual->siguiente;
+			actual = siguiente;
 		}
-		return T(); // Retorna valor por defecto si no encuentra
+		
+		// Actualizar la cima con la pila ordenada
+		cima = ordenado;
 	}
 
-	// Metodo para contar con lambda (REQUERIMIENTO: Lambda 3)
-	int contar(function<bool(T)> condicion)
-	{
-		int contador = 0;
+	// ============================================================
+	// OTROS METODOS AUXILIARES (Estilo del Profesor)
+	// ============================================================
+	
+	// Metodo para obtener elemento en una posicion (como el profesor)
+	T obtenerEnPosicion(int posicion) {
+		if (posicion < 0 || posicion >= tamanio) {
+			return T();
+		}
+		
 		Nodo<T>* actual = cima;
-		while (actual != nullptr)
-		{
-			if (condicion(actual->dato))
-			{
-				contador++;
-			}
+		for (int i = 0; i < posicion; i++) {
 			actual = actual->siguiente;
 		}
-		return contador;
+		
+		return actual->dato;
 	}
 
 	// Metodo para obtener la cima (util para otras operaciones)
